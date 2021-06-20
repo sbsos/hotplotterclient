@@ -58,7 +58,7 @@ class master_controller(object):
     username = ''
     plotterKey = ''
     api_url = 'https://api.hotplotter.com/api/Plotter/UpdateStatus'
-    
+
     def __init__(self, username, plotterKey):
         self.username = username
         self.plotterKey = plotterKey

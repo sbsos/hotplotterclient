@@ -1,7 +1,8 @@
 import subprocess
 import threading
 import datetime
-
+import os
+import shlex
 
 class plot_process_monitor(object):
     proc = None
@@ -191,14 +192,26 @@ class plot_process(object):
         else:
             return self.begin_mad_max_plot()
 
+    def build_mad_max_command_safe(self):
+        command = 'chia_plot' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -u ' + str(self.config.buckets) + ' -t ' + self.temp_drive + ' -2 ' + self.temp_drive_two + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + ' -p ' + self.config.pool_key
+        split = shlex.split(command)
+        return split
+
+    def build_chia_plot_command_safe(self):
+        command = 'chia plots create' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -b ' + str(self.config.ram) + ' -k ' + str(self.config.size) + ' -t ' + self.temp_drive + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + ' -p ' + self.config.pool_key
+        split = shlex.split(command)
+        return split 
+    
     def begin_mad_max_plot(self):
+        command = self.build_mad_max_command_safe()
         print('#Beginning Temp Plot: ' + self.plotting_drives + ' Plotting to ' + self.final_drive + " using Chia Plotter")
         print("Count: " + str(self.config.count) + " Threads: " + str(self.config.threads) + " Buckets: " + str(self.config.buckets) + " TempDrive: " + str(self.plotting_drives) + " Final Drive: " + str(self.final_drive) + " Farm Key: " + self.config.farm_key + " Pool Key: " + self.config.pool_key)
-        proc = subprocess.Popen(["chia_plot", "plots", "create", "-n", str(self.config.count), "-r", str(self.config.threads), "-t", self.temp_drive, "-2", self.temp_drive_two, "-d", self.final_drive, "-f", self.config.farm_key, "-p", self.config.pool_key], stdout=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
         return proc
 
     def begin_chia_plot(self):
+        command = self.build_chia_plot_command_safe()
         print('#Beginning Temp Plot: ' + self.temp_drive + ' Plotting to ' + self.final_drive + " using Chia Plotter")
         print("Count: " + str(self.config.count) + " Ram: " + str(self.config.ram) + " Threads: " + str(self.config.threads) + " Size: " + str(self.config.size) + " TempDrive: " + str(self.temp_drive) + " Final Drive: " + str(self.final_drive) + " Farm Key: " + self.config.farm_key + " Pool Key: " + self.config.pool_key)
-        proc = subprocess.Popen(["chia", "plots", "create", "-n", str(self.config.count), "-b", str(self.config.ram), "-r", str(self.config.threads), "-k", str(self.config.size), "-t", self.temp_drive, "-d", self.final_drive, "-f", self.config.farm_key, "-p", self.config.pool_key], stdout=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
         return proc
