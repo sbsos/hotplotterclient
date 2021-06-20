@@ -1,0 +1,3 @@
+[Settings]
+username = enter-username-here
+plotterKey = enter-plotter-key-here
