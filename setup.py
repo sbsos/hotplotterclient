@@ -4,9 +4,9 @@ setup(
     name = "hotplotter",
     version = "0.0.1",
     author = "Benjamin Huddle",
-    description = ("A Client Server for Chai farming"),
+    description = ("User Agent for Chia Remote Plotting"),
     license = "MIT",
     packages = find_packages(include=["hotplotterclient"]),
-    install_requires=["configparser", "requests"]
+    install_requires=["configparser", "requests", "psutil"]
 
 )
