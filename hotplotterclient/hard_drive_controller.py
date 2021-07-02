@@ -18,7 +18,7 @@ class hard_drive(object):
     
 class hard_drive_controller(object):
     available_drive_letters = ["A:/", "B:/", "C:/", "D:/", "E:/", "F:/", "G:/", "H:/", "I:/", "J:/", "K:/", "L:/", "M:/", "N:/", "O:/", "P:/", "Q:/", "R:/", "S:/", "T:/", "U:/", "V:/", "W:/", "X:/", "Y:/", "Z:/"]
-    supported_hard_drive_formats = ['vfat','ext4', 'ext3', 'ext2', 'fat32', 'ntfs']
+    supported_hard_drive_formats = ['vfat','ext4', 'ext3', 'ext2', 'fat32', 'ntfs', 'fuseblk']
 
     def get_hard_drives_linux(self):
         hard_drives = []
