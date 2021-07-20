@@ -84,6 +84,7 @@ class master_controller(object):
         config['count'] = queuedPlot['count']
         config['buckets'] = queuedPlot['buckets']
         config['plotter_type'] = queuedPlot['plotterType']
+        config['pool_type'] = queuedPlot['poolType']
         config['client_identifier'] = queuedPlot['clientIdentifier']
         
         return config
