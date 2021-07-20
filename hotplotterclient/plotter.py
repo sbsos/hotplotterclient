@@ -86,6 +86,7 @@ class settings_config(object):
     count = 0
     buckets = 0
     plotter_type = ""
+    pool_type = "OriginalPlot"
     client_identifier = ""
 
     def __init__(self, dictionary_config):
@@ -102,6 +103,7 @@ class settings_config(object):
         self.count = dictionary_config['count']
         self.client_identifier = dictionary_config['client_identifier']
         self.buckets = dictionary_config['buckets']
+        self.pool_type = dictionary_config['pool_type']    
         self.plotter_type = dictionary_config['plotter_type']
 
         
@@ -191,14 +193,20 @@ class plot_process(object):
             return self.begin_chia_plot()
         else:
             return self.begin_mad_max_plot()
-
+        
+    def get_pool_flag(self):
+        if self.config.pool_type == 'OriginalPlot':
+            return ' -p '
+        if self.config.pool_type == 'PoolPlot':
+            return ' -c '
+    
     def build_mad_max_command_safe(self):
-        command = 'chia_plot' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -u ' + str(self.config.buckets) + ' -t ' + self.temp_drive + ' -2 ' + self.temp_drive_two + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + ' -p ' + self.config.pool_key
+        command = 'chia_plot' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -u ' + str(self.config.buckets) + ' -t ' + self.temp_drive + ' -2 ' + self.temp_drive_two + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + self.get_pool_flag() + self.config.pool_key
         split = shlex.split(command)
         return split
 
     def build_chia_plot_command_safe(self):
-        command = 'chia plots create' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -b ' + str(self.config.ram) + ' -k ' + str(self.config.size) + ' -t ' + self.temp_drive + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + ' -p ' + self.config.pool_key
+        command = 'chia plots create' + ' -n ' + str(self.config.count) + ' -r ' + str(self.config.threads) + ' -b ' + str(self.config.ram) + ' -k ' + str(self.config.size) + ' -t ' + self.temp_drive + ' -d ' + self.final_drive + ' -f ' + self.config.farm_key + self.get_pool_flag() + self.config.pool_key
         split = shlex.split(command)
         return split 
     
