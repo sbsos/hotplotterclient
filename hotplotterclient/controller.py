@@ -108,8 +108,6 @@ class master_controller(object):
             else:
                 if x.status_code == 400:
                     raise Exception("Please confirm your username and plotter key are correct!")
-                else:
-                    raise Exception("Error: " + str(x.status_code))
         except requests.ConnectionError as err:
             print("API Error. " + str(err) + ". Retrying in " + str(heartbeat_interval))
             
