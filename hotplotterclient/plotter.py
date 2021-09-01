@@ -128,8 +128,13 @@ class plot_process_controller(object):
             # get the most recently created active plot - temp drive two only will be created with madmax. we're fine filtering on it, since if it isn't used, they'll always be empty
             active_monitors = [x for x in self.active_plot_monitors if x.temp_drive == plot_config['temp_drive'] and x.temp_drive_two == plot_config['temp_drive_two'] and x.destination_drive == plot_config['destination_drive']]
             active_monitors.sort(key=lambda x: x.start_time, reverse=True)
-            latest_monitor = active_monitors[0]
 
+            latest_monitor = None
+            if len(active_monitors) > 0:
+                latest_monitor = active_monitors[0]
+            else:
+                raise Exception("It's likely you are plotting to the root directory of C:/, which you will not have permission to do without running as an administrator.")
+            
             if config.stagger_type.lower() == 'time':
                 if latest_monitor.start_time < datetime.datetime.now() - datetime.timedelta(seconds = config.stagger_time):
                     print("Starting Next Plot")
@@ -146,7 +151,7 @@ class plot_process_controller(object):
     def start_plotting(self, config):
         for plot_config in config.drives:
             count = int(plot_config["parallel_plots"])
-    
+            
             if count > 0:
                 self.start_plot(config, plot_config, count)
     
