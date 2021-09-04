@@ -3,6 +3,7 @@ import threading
 import datetime
 import os
 import shlex
+from replotting import replotting
 
 class plot_process_monitor(object):
     proc = None
@@ -16,19 +17,19 @@ class plot_process_monitor(object):
     file_name = ""
     step = ""
     plot_number = 0
-    number_of_iterations = 0
     client_identifier = ""
+    replotting = None
     
-    def __init__(self, proc, temp_drive, temp_drive_two, destination_drive, number_of_iterations, client_identifier):
+    def __init__(self, proc, temp_drive, temp_drive_two, destination_drive, client_identifier, replotting):
         self.proc = proc
         self.temp_drive = temp_drive
         self.temp_drive_two = temp_drive_two
         self.destination_drive = destination_drive
         self.file_name = str(self.proc.pid) + ".txt"
         self.start_time = datetime.datetime.now()
-        self.number_of_iterations = number_of_iterations
         self.client_identifier = client_identifier
-
+        self.replotting = replotting
+        
     @property
     def plotting_drives(self):
         joined_drive_names = self.temp_drive
@@ -47,6 +48,13 @@ class plot_process_monitor(object):
 
             if "Starting phase 1/4".lower() in line.lower() or "plot name" in line.lower():
                 self.plot_number += 1
+                #client_identifier has significance. If a user has multiple plot processes running to same destination drive, not all want might want to replot OG. client_identifier is correlated to the individual plot kickoff, which contains if replotting is enabled or not
+                deletedPlot = self.replotting.deletePlot(self.destination_drive, self.client_identifier)
+                replottingEnabled = deletedPlot == None
+                if replottingEnabled:
+                    if deletedPlot == False:
+                        #might want to check HD space at this point. If none, we kick out. If there is still enough for the size of the plot let it continue.
+                        placeHolder = "placeHolder"
             
             parsed_phase = self.get_phase(line)
             if parsed_phase != 0:
@@ -88,7 +96,8 @@ class settings_config(object):
     plotter_type = ""
     pool_type = "OriginalPlot"
     client_identifier = ""
-
+    replot = False
+    
     def __init__(self, dictionary_config):
         self.drives = dictionary_config["drives"]
         self.stagger_type = dictionary_config['stagger_type']
@@ -105,13 +114,15 @@ class settings_config(object):
         self.buckets = dictionary_config['buckets']
         self.pool_type = dictionary_config['pool_type']    
         self.plotter_type = dictionary_config['plotter_type']
+        self.replot = dictionary_config['replot']
 
         
 class plot_process_controller(object):
     list_of_plotting_processes = []
     log_file_name = "log_file_"
     active_plot_monitors = []
-
+    replotting = replotting()
+    
     def add_monitor(self, monitor):
         self.active_plot_monitors.add(monitor)
 
@@ -163,7 +174,9 @@ class plot_process_controller(object):
 
         plot_config["parallel_plots"] -= 1
 
-        monitor = plot_process_monitor(proc, plot_config["temp_drive"], plot_config["temp_drive_two"], plot_config["destination_drive"], iteration, plot_config["client_identifier"])
+        #we check if enabled inside
+        self.replotting.addDrivePlots(plot_config["destination_drive"], plot_config["client_identifier"], config.replot)
+        monitor = plot_process_monitor(proc, plot_config["temp_drive"], plot_config["temp_drive_two"], plot_config["destination_drive"], plot_config["client_identifier"], self.replotting)
 
         thread = threading.Thread(target = monitor.start_monitoring)
         thread.daemon = True
@@ -219,12 +232,18 @@ class plot_process(object):
         command = self.build_mad_max_command_safe()
         print('#Beginning Temp Plot: ' + self.plotting_drives + ' Plotting to ' + self.final_drive + " using Chia Plotter")
         print("Count: " + str(self.config.count) + " Threads: " + str(self.config.threads) + " Buckets: " + str(self.config.buckets) + " TempDrive: " + str(self.plotting_drives) + " Final Drive: " + str(self.final_drive) + " Farm Key: " + self.config.farm_key + " Pool Key: " + self.config.pool_key)
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+        try:
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+        except OSError as e:
+            raise Exception('Please make sure you have permission to plot in the assigned directory, and that you have chia_plot in your PATH')
         return proc
 
     def begin_chia_plot(self):
         command = self.build_chia_plot_command_safe()
         print('#Beginning Temp Plot: ' + self.temp_drive + ' Plotting to ' + self.final_drive + " using Chia Plotter")
         print("Count: " + str(self.config.count) + " Ram: " + str(self.config.ram) + " Threads: " + str(self.config.threads) + " Size: " + str(self.config.size) + " TempDrive: " + str(self.temp_drive) + " Final Drive: " + str(self.final_drive) + " Farm Key: " + self.config.farm_key + " Pool Key: " + self.config.pool_key)
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+        try:
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+        except OSError as e:
+            raise Exception('Please make sure you have permission to plot in the assigned directory, and that you have chia in your PATH')
         return proc
