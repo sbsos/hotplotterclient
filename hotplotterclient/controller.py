@@ -5,6 +5,7 @@ import configparser
 import requests
 import json
 import time
+from features import features
 
 
 class plotProcessDto(object):
@@ -26,13 +27,15 @@ class plotProcessDto(object):
 
 
 class payload(object):
-
+    
     def __init__(self):
         self.plottingStatuses = []
         self.hardDrives = []
         self.username = ""
         self.plotterKey = ""
-    
+        self.features = []
+        self.updateHardDrives = False
+        
     def addHardDrives(self, hardDrives):
         self.hardDrives = hardDrives
 
@@ -47,6 +50,9 @@ class payload(object):
         self.username = username
         self.plotterKey = plotterKey
 
+    def addFeatures(self):
+        self.features = features().getFeatures()
+    
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
@@ -55,10 +61,11 @@ class master_controller(object):
     plot_controllers = []
     plot_controller = plot_process_controller()
     hd_controller = hard_drive_controller()
+    lastHardDriveHash = ''
     username = ''
     plotterKey = ''
     api_url = 'https://api.hotplotter.com/api/Plotter/UpdateStatus'
-
+    
     def __init__(self, username, plotterKey):
         self.username = username
         self.plotterKey = plotterKey
@@ -86,6 +93,7 @@ class master_controller(object):
         config['plotter_type'] = queuedPlot['plotterType']
         config['pool_type'] = queuedPlot['poolType']
         config['client_identifier'] = queuedPlot['clientIdentifier']
+        config['replot'] = queuedPlot['replot']
         
         return config
         
@@ -93,9 +101,17 @@ class master_controller(object):
         heartbeat_interval = 120.0
         
         postData = payload()
-        postData.addHardDrives(self.hd_controller.get_hard_drives())
+        hardDriveStatuses = self.hd_controller.get_hard_drives()
+        updateHardDrives = hash(tuple(hardDriveStatuses)) != self.lastHardDriveHash
+        if(updateHardDrives):
+            postData.addHardDrives(hardDriveStatuses)
+            self.lastHardDriveHash = hash(tuple(hardDriveStatuses))
+            postData.updateHardDrives = True
+            
         postData.addPlots(self.plot_controller)
         postData.addAuth(self.username, self.plotterKey)
+        postData.addFeatures()
+
         try:
             x = requests.post(self.api_url, data=postData.toJSON(), headers={"Content-Type": "application/json"})
             if(x.ok):
