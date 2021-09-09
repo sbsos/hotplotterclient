@@ -5,7 +5,7 @@ class drivePlots(object):
     driveName = ""
     plots = []
     plotTypes = ""
-    offset = 58
+    formatLengthOffset = 52
     def __init__(self, driveName, plotTypes):
         self.driveName = driveName
         self.populatePlots(PlotTypes.OgPlots)
@@ -14,6 +14,10 @@ class drivePlots(object):
         plots = filter(lambda c: 'plot' in c, files)
         return plots
 
+    def getLength(self, byteArray):
+        length = byteArray[1] >> byteArray[0]
+        return length
+    
     def populatePlots(self, filterPlotType):
         files = os.listdir(self.driveName)
         plots = self.filterPlotsInDirectory(files)
@@ -25,13 +29,15 @@ class drivePlots(object):
                 plotWithFullPath = self.driveName + plot
 
             with open(plotWithFullPath, "rb") as plotFile:
-                plotFile.read(self.offset)
+                plotFile.read(self.formatLengthOffset)
                 res = plotFile.read(2)
+                formatLength = self.getLength(res)
+                plotFile.read(formatLength)
 
-                #Two Byte to int, w/ big to achieve their Utility.TwoByteToInt
-                length = res[1] >> res[0]
+                memo = plotFile.read(2)
+                memoLength = self.getLength(memo)
                 
-                plotType = self.getPlotType(length)
+                plotType = self.getPlotType(memoLength)
                 if plotType == filterPlotType:
                     self.plots.append(plotWithFullPath)
                     
@@ -46,8 +52,10 @@ class drivePlots(object):
         return None
     
     def getPlot(self):
-        plotName = self.plots.pop()
-        return plotName
+        if len(self.plots) > 0:
+            plotName = self.plots.pop()
+            return plotName
+        return None
                 
     
 class replotting(object):
@@ -89,5 +97,3 @@ class PlotTypes(object):
 if __name__ == '__main__':
     replotting = replotting()
     replotting.addDrivePlots('A:/Plots', '1', True)
-    plotName = replotting.deletePlot('A:/Plots', '1')
-    print(plotName)
