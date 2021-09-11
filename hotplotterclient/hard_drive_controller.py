@@ -1,6 +1,8 @@
 import shutil
 import psutil
 import os
+import subprocess
+import re
 
 class hard_drive(object):
     total = 0
@@ -18,7 +20,7 @@ class hard_drive(object):
     
 class hard_drive_controller(object):
     available_drive_letters = ["A:/", "B:/", "C:/", "D:/", "E:/", "F:/", "G:/", "H:/", "I:/", "J:/", "K:/", "L:/", "M:/", "N:/", "O:/", "P:/", "Q:/", "R:/", "S:/", "T:/", "U:/", "V:/", "W:/", "X:/", "Y:/", "Z:/"]
-    supported_hard_drive_formats = ['vfat','ext4', 'ext3', 'ext2', 'fat32', 'ntfs', 'fuseblk']
+    supported_hard_drive_formats = ['vfat','ext4', 'ext3', 'ext2', 'fat32', 'ntfs', 'fuseblk', 'tmpfs']
 
     def get_hard_drives_linux(self):
         hard_drives = []
@@ -34,13 +36,28 @@ class hard_drive_controller(object):
         
     def get_hard_drives_windows(self):
         hard_drives = []
-        for available_drive in self.available_drive_letters:
+        mountvol_hds = []
+        result = subprocess.run(['mountvol'], capture_output=True, text=True)
+        parsed_hard_drives = re.findall('[A-Z]:\\\.*', result.stdout)
+        
+        for hd in parsed_hard_drives:
             try:
-                hd = self.get_hard_disk_space(available_drive)
-                hard_drives.append(hd)
-            
+                formatted_hd = hd.replace("\\","/")
+                mountvol_hds.append(formatted_hd)
+                hd_object = self.get_hard_disk_space(formatted_hd)
+                hard_drives.append(hd_object)
             except Exception:
                 continue
+
+        #network drives don't show up in mountvol. manually iterate to see if they have any network storage
+        not_checked_drives = [i for i in self.available_drive_letters if i not in mountvol_hds]
+        for hd in not_checked_drives:
+            try:
+                hd_object = self.get_hard_disk_space(hd)
+                hard_drives.append(hd_object)
+            except Exception:
+                continue
+
         return hard_drives
     
     def get_hard_drives(self):
@@ -65,3 +82,4 @@ class hard_drive_controller(object):
     
 if __name__ == '__main__':
     controller = hard_drive_controller()
+    hds = controller.get_hard_drives_windows()    
